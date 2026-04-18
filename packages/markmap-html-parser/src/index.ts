@@ -9,6 +9,10 @@ export enum Levels {
   H4,
   H5,
   H6,
+  H7,
+  H8,
+  H9,
+  H10,
   Block,
   List,
   ListItem,
@@ -56,7 +60,7 @@ const defaultSelectorRules: IHtmlParserSelectorRules = {
   'div,p': ({ $node }) => ({
     queue: $node.children(),
   }),
-  'h1,h2,h3,h4,h5,h6': ({ $node, getContent }) => ({
+  'h1,h2,h3,h4,h5,h6,h7,h8,h9,h10': ({ $node, getContent }) => ({
     ...getContent($node.contents()),
   }),
   'ul,ol': ({ $node }) => ({
@@ -86,17 +90,19 @@ const defaultSelectorRules: IHtmlParserSelectorRules = {
 };
 
 export const defaultOptions: IHtmlParserOptions = {
-  selector: 'h1,h2,h3,h4,h5,h6,ul,ol,li,table,pre,p>img:only-child',
+  selector:
+    'h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,ul,ol,li,table,pre,p>img:only-child',
   selectorRules: defaultSelectorRules,
 };
 
 const MARKMAP_COMMENT_PREFIX = 'markmap: ';
-const SELECTOR_HEADING = /^h[1-6]$/;
+const SELECTOR_HEADING = /^h(\d+)$/;
 const SELECTOR_LIST = /^[uo]l$/;
 const SELECTOR_LIST_ITEM = /^li$/;
 
 function getLevel(tagName: string) {
-  if (SELECTOR_HEADING.test(tagName)) return +tagName[1] as Levels;
+  const match = tagName.match(SELECTOR_HEADING);
+  if (match) return +match[1] as Levels;
   if (SELECTOR_LIST.test(tagName)) return Levels.List;
   if (SELECTOR_LIST_ITEM.test(tagName)) return Levels.ListItem;
   return Levels.Block;
@@ -211,7 +217,7 @@ export function parseHtml(html: string, opts?: Partial<IHtmlParserOptions>) {
       }
       const level = getLevel(child.tagName);
       if (!result) {
-        if (level <= Levels.H6) {
+        if (level <= Levels.H10) {
           skippingHeading = level;
         }
         return;
@@ -219,7 +225,7 @@ export function parseHtml(html: string, opts?: Partial<IHtmlParserOptions>) {
       if (skippingHeading > Levels.None && level > skippingHeading) return;
       if (!$child.is(options.selector)) return;
       skippingHeading = Levels.None;
-      const isHeading = level <= Levels.H6;
+      const isHeading = level <= Levels.H10;
       let data = {
         // If the child is an inline element and expected to be a separate node,
         // data from the closest `<p>` should be included, e.g. `<p data-lines><img /></p>`
